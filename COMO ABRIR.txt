@@ -1,0 +1,14 @@
+MEU CANTINHO - COMO ABRIR NO WINDOWS
+
+1. Instale a versao LTS do Node.js em https://nodejs.org/ (apenas uma vez).
+2. Extraia todo o ZIP em uma pasta permanente, por exemplo Documentos/Meu Cantinho.
+3. Abra a pasta extraida e de dois cliques em "Abrir Meu Cantinho.bat".
+4. O navegador vai abrir o aplicativo. Mantenha a janela do servidor aberta.
+5. Para criar um atalho, clique com o botao direito no arquivo .bat,
+   escolha Mostrar mais opcoes > Enviar para > Area de trabalho (criar atalho).
+
+Use sempre o mesmo navegador e perfil para acessar suas notas.
+As notas ficam salvas neste navegador. Use "Baixar backup" regularmente.
+Nao e necessario executar npm install. O projeto nao usa pacotes externos.
+O arquivo .bat e destinado ao Windows; seu funcionamento precisa ser
+verificado no seu computador. Em outros sistemas, use npm start na pasta.

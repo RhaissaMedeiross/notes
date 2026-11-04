@@ -1,11 +1,13 @@
 {
   "name": "meu-cantinho",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "desktop": "node desktop.cjs"
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "description": "Caderno de programação personalizável com interface de aplicativo"
 }

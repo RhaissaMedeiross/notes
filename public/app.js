@@ -1,23 +1,281 @@
-const $=s=>document.querySelector(s), key='cantinho-v1';
-const initial={folders:['Pessoal','Trabalho','Inspirações'],notes:[{id:'welcome',title:'Um cantinho só meu ✿',body:'<p>Para guardar pensamentos, colecionar ideias e dar espaço ao que importa.</p><p>Este é o seu começo. Clique para escrever do seu jeito. ♡</p>',folder:'Pessoal',color:'#eef0e5',favorite:true,date:'',sticky:false},{id:'plans',title:'Pequenos planos, grandes sonhos',body:'<p>☐ Ler algumas páginas todos os dias<br>☐ Tirar aquela ideia do papel<br>☐ Reservar um tempo para mim</p>',folder:'Pessoal',color:'#faf5eb',date:'',sticky:false},{id:'remember',title:'Um lembrete gentil ☀',body:'<p>Você não precisa fazer tudo hoje.<br>Um passo de cada vez também é caminho.</p>',folder:'',color:'#f8edbe',date:'',sticky:true},{id:'ideas',title:'Ideias que quero cultivar',body:'<p>Um projeto novo. Uma viagem sem pressa. Um espaço cheio de coisas que me inspiram.</p>',folder:'Inspirações',color:'#f0e9ed',date:'',sticky:false},{id:'work',title:'A próxima boa ideia ✨',body:'<p>Um lugar para anotar os insights que aparecem no meio do dia.</p>',folder:'Trabalho',color:'#eaf0ed',date:'',sticky:false}]};
-let state;try{state=JSON.parse(localStorage.getItem(key))||structuredClone(initial)}catch{state=structuredClone(initial)}let filter='all',current=null,savedRange=null;
-const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function clean(html){const t=document.createElement('template');t.innerHTML=html;const allowed=new Set(['P','DIV','BR','B','STRONG','I','EM','U','UL','OL','LI','SPAN','FONT','H1','H2','H3']);for(const el of [...t.content.querySelectorAll('*')]){if(!allowed.has(el.tagName)){el.replaceWith(document.createTextNode(el.textContent));continue}for(const a of [...el.attributes]){if(a.name==='style'){const styles=['color','background-color','font-family','font-size','text-align','font-weight','font-style','text-decoration'];const safe=document.createElement('span');for(const p of styles)safe.style.setProperty(p,el.style.getPropertyValue(p));el.setAttribute('style',safe.style.cssText)}else if(!(el.tagName==='FONT'&&['color','face','size'].includes(a.name)))el.removeAttribute(a.name)}}return t.innerHTML}
-function persist(){try{localStorage.setItem(key,JSON.stringify(state));$('#save-status').textContent='✓ Alterações salvas neste navegador'}catch{$('#save-status').textContent='Não foi possível salvar. Baixe um backup.';toast('Armazenamento indisponível. Exporte suas notas.')}}
-function toast(t){$('#toast').textContent=t;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',3500)}
-function plain(html){const d=document.createElement('div');d.innerHTML=clean(html);return d.textContent}
-function render(){ $('#count').textContent=state.notes.length;$('#folders').innerHTML=state.folders.map(f=>`<button data-folder="${escapeHtml(f)}">▱ ${escapeHtml(f)} <span>${state.notes.filter(n=>n.folder===f).length}</span></button>`).join('');document.querySelectorAll('[data-folder]').forEach(b=>b.onclick=()=>{filter=b.dataset.folder;render()});const label=filter==='all'?'Todas as notas':filter==='favorite'?'Favoritas':filter==='sticky'?'Meus post-its':filter;$('#collection-title').textContent=label;$('#breadcrumb').textContent='Seu espaço pessoal / '+label;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter===filter));const q=$('#search').value.toLocaleLowerCase('pt-BR');const notes=state.notes.filter(n=>(filter==='all'||filter==='favorite'&&n.favorite||filter==='sticky'&&n.sticky||n.folder===filter)&&(`${n.title} ${plain(n.body)}`.toLocaleLowerCase('pt-BR').includes(q)));$('#subtitle').textContent=notes.length+' notas para chamar de suas';$('#notes').innerHTML=notes.map(n=>`<article class="card ${n.sticky?'sticky':''}" tabindex="0" role="button" data-id="${escapeHtml(n.id)}" style="background:${/^#[a-f0-9]{6}$/i.test(n.color)?n.color:'#eef0e5'}"><span class="tag">${n.sticky?'▧ Post-it':'▱ '+escapeHtml(n.folder||'Sem pasta')}</span><span class="star">${n.favorite?'♡':'⋯'}</span><h3>${escapeHtml(n.title||'Sem título')}</h3><p>${escapeHtml(plain(n.body))}</p><div class="card-bottom"><span>${n.date?'◷ '+escapeHtml(n.date.split('-').reverse().join('/')):'Seu espaço, seu ritmo'}</span><span>↗</span></div></article>`).join('')||'<div class="empty">Nenhuma nota por aqui ainda.<br>Crie uma ideia nova com o botão “Nova nota”.</div>';document.querySelectorAll('[data-id]').forEach(c=>{c.onclick=()=>openNote(c.dataset.id);c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openNote(c.dataset.id)}}})}
-function openNote(id){current=state.notes.find(n=>n.id===id);savedRange=null;$('#title').value=current.title;$('#content').innerHTML=clean(current.body);$('#date').value=current.date||'';$('#color').value=current.color;$('#note-folder').innerHTML='<option value="">Sem pasta</option>'+state.folders.map(f=>`<option>${escapeHtml(f)}</option>`).join('');$('#note-folder').value=current.folder;$('#favorite').textContent=current.favorite?'♥ Favoritada':'♡ Favoritar';$('#editor-dialog').showModal()}
-function save(){if(!current)return;Object.assign(current,{title:$('#title').value,body:clean($('#content').innerHTML),date:$('#date').value,color:$('#color').value,folder:$('#note-folder').value});persist();render()}
-function newNote(sticky=false){const n={id:crypto.randomUUID(),title:'',body:'',folder:state.folders.includes(filter)?filter:'',date:'',color:sticky?'#f8edbe':'#eef0e5',sticky,favorite:false};state.notes.unshift(n);persist();render();openNote(n.id);$('#title').focus()}
-$('#new').onclick=()=>newNote();$('#sticky-new').onclick=()=>newNote(true);$('#search').oninput=render;document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;render()});$('#folder-add').onclick=()=>{const f=prompt('Qual é o nome da nova pasta?')?.trim();if(f&&!state.folders.includes(f)){state.folders.push(f);persist();render()}};
-for(const id of ['title','content','date','color','note-folder'])$('#'+id).addEventListener('input',save);
-$('#content').addEventListener('paste',e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));save()});
-document.addEventListener('selectionchange',()=>{const sel=getSelection();if(sel.rangeCount&&$('#content').contains(sel.anchorNode))savedRange=sel.getRangeAt(0).cloneRange()});
-function command(cmd,value){$('#content').focus();if(savedRange){const s=getSelection();s.removeAllRanges();s.addRange(savedRange)}document.execCommand(cmd,false,value);save()}
-document.querySelectorAll('[data-command]').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>command(b.dataset.command,b.dataset.value)});$('#font').onchange=e=>command('fontName',e.target.value);$('#size').onchange=e=>command('fontSize',e.target.value);$('#symbols').onchange=e=>{if(e.target.value)command('insertText',e.target.value);e.target.value=''};$('#favorite').onclick=()=>{current.favorite=!current.favorite;$('#favorite').textContent=current.favorite?'♥ Favoritada':'♡ Favoritar';save()};$('#delete').onclick=()=>{if(confirm('Excluir esta nota? Essa ação não pode ser desfeita.')){state.notes=state.notes.filter(n=>n.id!==current.id);persist();$('#editor-dialog').close();current=null;render()}};$('#editor-dialog').addEventListener('close',()=>{current=null});
-$('#grid').onclick=()=>view(false);$('#list').onclick=()=>view(true);function view(list){$('#notes').classList.toggle('list',list);$('#grid').classList.toggle('selected',!list);$('#list').classList.toggle('selected',list);localStorage.setItem('cantinho-layout',list?'list':'grid')}
-$('#theme').onclick=()=>{document.body.classList.toggle('dark');localStorage.setItem('cantinho-dark',document.body.classList.contains('dark'))};
-function download(name,data,type){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}$('#export').onclick=()=>download((current.title||'nota').replace(/[^\p{L}\p{N} -]/gu,'')+'.txt',current.title+'\n'+current.date+'\n\n'+plain(current.body),'text/plain;charset=utf-8');$('#backup').onclick=()=>download('meu-cantinho-backup.json',JSON.stringify(state,null,2),'application/json');
-$('#import').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>5000000)throw Error();const data=JSON.parse(await f.text());if(!Array.isArray(data.notes)||!Array.isArray(data.folders)||!data.folders.every(f=>typeof f==='string')||!data.notes.every(n=>typeof n.title==='string'&&typeof n.body==='string'))throw Error();if(!confirm('Substituir suas notas pelo backup? Baixe um backup das atuais antes de continuar.'))return;state={folders:data.folders,notes:data.notes.map(n=>({...n,id:crypto.randomUUID(),body:clean(n.body),folder:typeof n.folder==='string'?n.folder:'',date:/^\d{4}-\d{2}-\d{2}$/.test(n.date)?n.date:'',color:/^#[a-f0-9]{6}$/i.test(n.color)?n.color:'#eef0e5'}))};persist();render();toast('Backup restaurado!')}catch{toast('Não foi possível importar. Escolha um backup válido.')}finally{e.target.value=''}};
-let installPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('#install').textContent='↗ Instalar no computador'});$('#install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null}else alert('No Chrome ou Edge, abra o menu do navegador e procure “Instalar aplicativo” ou “Criar atalho”. A instalação exige HTTPS (ou localhost). As notas ficam neste navegador; baixe backups regularmente.')};if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});document.body.classList.toggle('dark',localStorage.getItem('cantinho-dark')==='true');view(localStorage.getItem('cantinho-layout')==='list');render();
+(() => {
+  'use strict';
+  const $ = selector => document.querySelector(selector);
+  const $$ = selector => [...document.querySelectorAll(selector)];
+  const STORAGE_KEY = 'cantinho-v1';
+  const fonts = { sans: 'Arial, Helvetica, sans-serif', serif: 'Georgia, "Times New Roman", serif', mono: '"Courier New", monospace' };
+  const presets = {
+    girly: { accent: '#bd4f7e', bg: '#f5e5ee', panel: '#fff7fb', paper: '#fffdfd', ink: '#59394b', font: 'sans', heading: 'serif', pattern: 'ruled', radius: 12 },
+    gothic: { accent: '#ce8eac', bg: '#211a26', panel: '#302535', paper: '#322934', ink: '#f4e5ef', font: 'serif', heading: 'serif', pattern: 'plain', radius: 2 },
+    y2k: { accent: '#a13be0', bg: '#e7ddfa', panel: '#f5f0ff', paper: '#fffaff', ink: '#49335f', font: 'mono', heading: 'sans', pattern: 'grid', radius: 16 },
+    rose: { accent: '#b86782', bg: '#f4e7eb', panel: '#fbf5f7', paper: '#fffafb', ink: '#684652', font: 'sans', heading: 'sans', pattern: 'dots', radius: 8 }
+  };
+  const defaults = { ...presets.girly, theme: 'girly', name: 'meu caderno', icon: '୨୧', motto: 'aprendendo no meu ritmo.', desk: 'MY LITTLE CODING WORLD', footer: 'feito de café, código & sonhos', layout: 'comfortable', scale: 100, decorations: true, zoom: 100 };
+  const initial = {
+    folders: ['JavaScript', 'HTML & CSS', 'Lógica de programação'],
+    notes: [
+      { id: 'first-code', title: 'Meu primeiro código ♡', folder: 'JavaScript', color: '', favorite: true, sticky: false, date: '', body: '<h2>Todo começo tem um hello world.</h2><p>Este é o meu espaço para aprender, errar, tentar de novo e guardar cada pequena descoberta. Sem pressa, um conceito de cada vez. ✧</p><h3>01 / O que é uma variável?</h3><p>Uma variável guarda uma informação que podemos usar depois. Em JavaScript, usamos <b>const</b> quando não vamos reatribuir o valor e <b>let</b> quando precisamos mudá-lo.</p><pre data-language="JavaScript"><code>// minha primeira anotação de código ♡\nconst nome = "Rhaíssa";\nlet aulasEstudadas = 1;\n\nconsole.log(`Olá, ${nome}!`);</code></pre><h3>02 / Para não esquecer</h3><ul><li>Strings são textos entre aspas.</li><li>Números podem ser usados em cálculos.</li><li><b>console.log()</b> mostra uma mensagem no console.</li></ul><p><i>♡ Aprender é construir uma versão nova de mim.</i></p>' },
+      { id: 'html-css', title: 'HTML + CSS: meu mapa', folder: 'HTML & CSS', color: '', favorite: false, sticky: false, date: '', body: '<h2>A estrutura e o estilo ✿</h2><p><b>HTML</b> organiza o conteúdo. <b>CSS</b> define a aparência.</p><pre data-language="HTML"><code>&lt;h1&gt;Meu cantinho na internet&lt;/h1&gt;\n&lt;p&gt;Feito por mim, com carinho.&lt;/p&gt;</code></pre><h3>Meu próximo passo</h3><p>Criar uma página simples e experimentar cores, tamanhos e espaçamentos.</p>' },
+      { id: 'logic', title: 'Pensar antes de programar', folder: 'Lógica de programação', color: '', favorite: false, sticky: false, date: '', body: '<h2>Dividir para entender ✧</h2><p>Um algoritmo é uma sequência de passos para resolver um problema.</p><ol><li>O que eu recebo de entrada?</li><li>O que eu preciso fazer com essa informação?</li><li>Qual resultado eu espero?</li></ol><h3>Exercício do dia</h3><p>Escrever, em palavras, os passos de um programa que diz se um número é par.</p>' },
+      { id: 'little-reminder', title: 'Lembrete de uma dev 🎀', folder: 'JavaScript', color: '#fbd9e7', favorite: false, sticky: true, date: '', body: '<h2>Você não precisa saber tudo.</h2><p>Pesquise. Faça perguntas. Teste de novo.</p><p>Cada erro é uma pista, não o fim do caminho. ♡</p>' }
+    ], settings: { ...defaults }, activeId: 'first-code'
+  };
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const isColor = value => typeof value === 'string' && /^#[a-f0-9]{6}$/i.test(value);
+  const clamp = (value, min, max, fallback) => Number.isFinite(Number(value)) ? Math.min(max, Math.max(min, Number(value))) : fallback;
+  function clean(html) {
+    const template = document.createElement('template');
+    template.innerHTML = String(html || '');
+    const allowed = new Set(['P', 'DIV', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'UL', 'OL', 'LI', 'SPAN', 'FONT', 'H1', 'H2', 'H3', 'H4', 'PRE', 'CODE', 'BLOCKQUOTE', 'HR', 'INPUT', 'LABEL']);
+    for (const element of [...template.content.querySelectorAll('*')]) {
+      if (!template.content.contains(element)) continue;
+      if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'SVG', 'MATH', 'LINK', 'META'].includes(element.tagName)) { element.remove(); continue; }
+      if (!allowed.has(element.tagName)) { element.replaceWith(...element.childNodes); continue; }
+      if (element.tagName === 'INPUT' && element.getAttribute('type') !== 'checkbox') { element.remove(); continue; }
+      for (const attr of [...element.attributes]) {
+        if (attr.name === 'style') {
+          const safe = document.createElement('span');
+          for (const property of ['color', 'background-color', 'font-family', 'font-size', 'text-align', 'font-weight', 'font-style', 'text-decoration']) safe.style.setProperty(property, element.style.getPropertyValue(property));
+          element.setAttribute('style', safe.style.cssText);
+        } else if (element.tagName === 'PRE' && attr.name === 'data-language') {
+          element.setAttribute('data-language', attr.value.slice(0, 30));
+        } else if (element.tagName === 'UL' && attr.name === 'data-checklist') {
+          element.setAttribute('data-checklist', '');
+        } else if (element.tagName === 'INPUT' && ['type', 'checked'].includes(attr.name)) {
+          // Only inert, local checklist controls are preserved.
+        } else if (!(element.tagName === 'FONT' && ['color', 'face', 'size'].includes(attr.name))) element.removeAttribute(attr.name);
+      }
+    }
+    return template.innerHTML;
+  }
+  function settingsFrom(raw = {}) {
+    if (!raw || typeof raw !== 'object') raw = {};
+    const theme = Object.hasOwn(presets, raw.theme) ? raw.theme : 'girly';
+    const result = { ...defaults, ...presets[theme], theme };
+    for (const key of ['accent', 'bg', 'panel', 'paper', 'ink']) if (isColor(raw[key])) result[key] = raw[key];
+    for (const key of ['name', 'icon', 'motto', 'desk', 'footer']) if (typeof raw[key] === 'string') result[key] = raw[key].slice(0, key === 'icon' ? 10 : 80);
+    if (Object.hasOwn(fonts, raw.font)) result.font = raw.font;
+    if (Object.hasOwn(fonts, raw.heading)) result.heading = raw.heading;
+    if (['ruled', 'grid', 'dots', 'plain'].includes(raw.pattern)) result.pattern = raw.pattern;
+    if (['comfortable', 'compact'].includes(raw.layout)) result.layout = raw.layout;
+    result.scale = clamp(raw.scale ?? 100, 90, 115, 100);
+    result.radius = clamp(raw.radius ?? result.radius, 0, 20, 12);
+    result.zoom = clamp(raw.zoom ?? 100, 70, 130, 100);
+    result.decorations = raw.decorations !== false;
+    return result;
+  }
+  function normalize(raw) {
+    if (!raw || !Array.isArray(raw.notes) || !Array.isArray(raw.folders) || raw.notes.length > 10000 || !raw.folders.every(f => typeof f === 'string') || !raw.notes.every(n => n && typeof n.title === 'string' && typeof n.body === 'string')) throw Error('Backup inválido');
+    const used = new Set();
+    const notes = raw.notes.map(n => {
+      const id = typeof n.id === 'string' && n.id && !used.has(n.id) ? n.id : crypto.randomUUID();
+      used.add(id);
+      return { id, title: n.title, body: clean(n.body), folder: typeof n.folder === 'string' ? n.folder : '', color: isColor(n.color) ? n.color : '', date: /^\d{4}-\d{2}-\d{2}$/.test(n.date) ? n.date : '', favorite: !!n.favorite, sticky: !!n.sticky };
+    });
+    return { folders: [...new Set([...raw.folders, ...notes.map(n => n.folder).filter(Boolean)])], notes, settings: settingsFrom(raw.settings), activeId: notes.some(n => n.id === raw.activeId) ? raw.activeId : notes[0]?.id || null };
+  }
+  let state, loadError = false;
+  try { const raw = localStorage.getItem(STORAGE_KEY); state = raw ? normalize(JSON.parse(raw)) : structuredClone(initial); }
+  catch { state = structuredClone(initial); loadError = true; }
+  let current = null, filter = 'all', savedRange = null, reversed = false, toastTimer;
+  function toast(message) {
+    $('#toast').textContent = message; $('#toast').classList.add('visible');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 4000);
+  }
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); $('#save-status').textContent = '● Salvo neste navegador'; return true; }
+    catch { $('#save-status').textContent = '⚠ Não foi possível salvar'; toast('O navegador não conseguiu salvar. Baixe um backup para guardar suas páginas.'); return false; }
+  }
+  function textOf(html) {
+    const div = document.createElement('div'); div.innerHTML = clean(html);
+    div.querySelectorAll('br').forEach(el => el.replaceWith('\n'));
+    div.querySelectorAll('p,div,h1,h2,h3,h4,li,pre').forEach(el => el.append('\n'));
+    return div.textContent.trim();
+  }
+  function filteredNotes() {
+    const query = $('#search').value.toLocaleLowerCase('pt-BR');
+    const notes = state.notes.filter(n => (filter === 'all' || filter === 'favorite' && n.favorite || filter === 'sticky' && n.sticky || n.folder === filter) && `${n.title} ${textOf(n.body)}`.toLocaleLowerCase('pt-BR').includes(query));
+    return reversed ? notes.toReversed() : notes;
+  }
+  function renderList() {
+    $('#count').textContent = state.notes.length;
+    $('#folders').innerHTML = state.folders.map((folder, index) => `<button class="folder-button ${filter === folder ? 'active' : ''}" data-folder-index="${index}"><span class="folder-symbol">${['⌘', '✿', '◇', '✦'][index % 4]}</span><span>${escapeHtml(folder)}</span><span class="folder-count">${state.notes.filter(n => n.folder === folder).length}</span></button>`).join('');
+    $$('[data-folder-index]').forEach(button => button.onclick = () => changeFilter(state.folders[Number(button.dataset.folderIndex)]));
+    $$('[data-filter]').forEach(button => button.classList.toggle('active', button.dataset.filter === filter));
+    $('#collection-title').textContent = filter === 'all' ? 'Todas as páginas' : filter === 'favorite' ? 'Favoritas' : filter === 'sticky' ? 'Meus post-its' : filter;
+    const notes = filteredNotes(); $('#subtitle').textContent = `${notes.length} ${notes.length === 1 ? 'página' : 'páginas'} · suas pequenas descobertas`;
+    $('#notes').innerHTML = notes.map(n => `<button class="page-card ${n.id === current?.id ? 'active' : ''} ${n.sticky ? 'sticky' : ''}" data-id="${escapeHtml(n.id)}" aria-pressed="${n.id === current?.id}"><span class="page-card-row"><span class="page-card-icon">${n.sticky ? '▧ POST-IT' : '▤ PÁGINA'}</span><span class="page-card-favorite">${n.favorite ? '♥' : '· · ·'}</span></span><strong class="page-card-title">${escapeHtml(n.title || 'Página sem título')}</strong><span class="page-card-preview">${escapeHtml(textOf(n.body).slice(0, 100) || 'Uma ideia esperando para acontecer…')}</span><span class="page-card-meta">${escapeHtml(n.folder || 'Sem caderno')}<span>${n.date ? escapeHtml(n.date.split('-').reverse().join('/')) : '✧'}</span></span></button>`).join('') || '<div class="empty-list"><span>♡</span><p>Nenhuma página por aqui.</p><small>Crie uma página ou tente outra busca.</small></div>';
+    $$('[data-id]').forEach(button => button.onclick = () => { openNote(button.dataset.id); persist(); });
+  }
+  function changeFilter(next) {
+    filter = next; const visible = filteredNotes();
+    if (!visible.some(n => n.id === current?.id)) openNote(visible[0]?.id || null); else renderList();
+  }
+  function readableInk(color) {
+    const rgb = [1, 3, 5].map(index => parseInt(color.slice(index, index + 2), 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+    return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722 > .35 ? '#493340' : '#f6eaf1';
+  }
+  function applyPaper() {
+    const color = current?.color || state.settings.paper;
+    $('#paper').style.setProperty('--page-color', color);
+    $('#paper').style.setProperty('--page-ink', readableInk(color));
+    $('#paper').classList.toggle('sticky', !!current?.sticky);
+    $('#color').value = color;
+  }
+  function updateDocumentInfo() {
+    $('#document-name').textContent = current?.title || (current ? 'Página sem título' : 'Seu caderno de estudos');
+    $('#breadcrumb').textContent = current?.folder || state.settings.name || 'Meu caderno';
+    $('#page-type').textContent = current?.sticky ? 'post-it' : 'página de estudo';
+    $('#page-badge').textContent = current?.sticky ? '▧ LITTLE REMINDER' : '⌘ STUDY NOTES';
+    $('#page-date').textContent = current?.date ? current.date.split('-').reverse().join('/') : 'sem pressa, sem pausa ♡';
+    $('#favorite').textContent = current?.favorite ? '♥' : '♡'; $('#favorite').setAttribute('aria-pressed', String(!!current?.favorite));
+    const text = current ? textOf(current.body) : '';
+    const words = text.match(/\S+/g)?.length || 0;
+    $('#word-count').textContent = `${words} ${words === 1 ? 'palavra' : 'palavras'}`;
+    $('#word-count-top').textContent = $('#word-count').textContent;
+  }
+  function openNote(id) {
+    current = state.notes.find(n => n.id === id) || null; savedRange = null; state.activeId = current?.id || null;
+    $('#paper').hidden = !current; $('.desk-caption').hidden = !current; $('.desk-footer').hidden = !current;
+    $('#empty-editor').hidden = !!current;
+    $$('.document-actions button').forEach(button => button.disabled = !current);
+    if (current) {
+      $('#title').value = current.title; $('#content').innerHTML = clean(current.body); $('#date').value = current.date;
+      $('#note-folder').innerHTML = '<option value="">Sem caderno</option>' + state.folders.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+      $('#note-folder').value = current.folder; applyPaper();
+    }
+    updateDocumentInfo(); renderList();
+  }
+  function saveNote() {
+    if (!current) return;
+    Object.assign(current, { title: $('#title').value, body: clean($('#content').innerHTML), folder: $('#note-folder').value, date: $('#date').value });
+    persist(); updateDocumentInfo(); renderList();
+  }
+  function newNote(sticky = false) {
+    const note = { id: crypto.randomUUID(), title: '', body: '', folder: state.folders.includes(filter) ? filter : '', date: '', color: sticky ? '#fbd9e7' : '', sticky, favorite: false };
+    state.notes.unshift(note); $('#search').value = '';
+    if (filter === 'favorite' || filter === 'sticky' && !sticky) filter = 'all';
+    openNote(note.id); persist(); $('#title').focus();
+  }
+  function applySettings(syncControls = true) {
+    const settings = state.settings;
+    document.body.dataset.theme = settings.theme; document.body.dataset.pattern = settings.pattern; document.body.dataset.layout = settings.layout;
+    for (const name of ['accent', 'bg', 'panel', 'ink']) document.body.style.setProperty(`--${name}`, settings[name]);
+    document.body.style.setProperty('--paper-default', settings.paper);
+    document.body.style.setProperty('--ui-font', fonts[settings.font]); document.body.style.setProperty('--heading-font', fonts[settings.heading]);
+    document.body.style.setProperty('--ui-scale', settings.scale / 100); document.body.style.setProperty('--radius', settings.radius + 'px'); document.body.style.setProperty('--page-zoom', settings.zoom / 100);
+    document.body.classList.toggle('no-decorations', !settings.decorations);
+    $('#brand-name').textContent = settings.name || 'meu caderno'; $('#brand-icon').textContent = settings.icon;
+    $('#motto').textContent = settings.motto; $('#desk-label').textContent = settings.desk; $('#paper-footer-text').textContent = settings.footer;
+    document.title = `${settings.name || 'Meu caderno'} — study studio`;
+    $('meta[name="theme-color"]').content = settings.accent;
+    $('#paper-pattern').value = settings.pattern; $('#zoom-reset').textContent = settings.zoom + '%';
+    $('#setting-scale-value').textContent = settings.scale + '%';
+    $$('[data-preset]').forEach(button => { button.classList.toggle('selected', button.dataset.preset === settings.theme); button.setAttribute('aria-pressed', String(button.dataset.preset === settings.theme)); });
+    if (syncControls) {
+      for (const name of ['name', 'icon', 'motto', 'desk', 'footer', 'accent', 'bg', 'panel', 'paper', 'ink', 'font', 'heading', 'pattern', 'layout', 'scale', 'radius']) $('#setting-' + name).value = settings[name];
+      $('#setting-decorations').checked = settings.decorations;
+    }
+    applyPaper(); updateDocumentInfo();
+  }
+  for (const name of ['name', 'icon', 'motto', 'desk', 'footer', 'accent', 'bg', 'panel', 'paper', 'ink', 'font', 'heading', 'pattern', 'layout', 'scale', 'radius']) {
+    $('#setting-' + name).addEventListener('input', event => {
+      state.settings = settingsFrom({ ...state.settings, [name]: event.target.value }); applySettings(false); persist();
+    });
+  }
+  $('#setting-decorations').onchange = event => { state.settings.decorations = event.target.checked; applySettings(false); persist(); };
+  $$('[data-preset]').forEach(button => button.onclick = () => { state.settings = settingsFrom({ ...state.settings, ...presets[button.dataset.preset], theme: button.dataset.preset }); applySettings(); persist(); });
+  $('#reset-settings').onclick = () => { state.settings = { ...defaults }; applySettings(); persist(); toast('Visual restaurado. Suas páginas continuam aqui ♡'); };
+  $('#customize').onclick = $('#customize-sidebar').onclick = () => $('#customizer').showModal();
+  $$('[data-tab]').forEach(button => button.onclick = () => {
+    $$('[data-tab]').forEach(tab => { tab.classList.toggle('active', tab === button); tab.setAttribute('aria-selected', String(tab === button)); });
+    $$('.ribbon-panel').forEach(panel => panel.hidden = panel.id !== 'panel-' + button.dataset.tab);
+  });
+  $('#new').onclick = $('#new-list').onclick = $('#new-empty').onclick = () => newNote();
+  $('#sticky-new').onclick = () => newNote(true);
+  $('#search').oninput = renderList;
+  $$('[data-filter]').forEach(button => button.onclick = () => changeFilter(button.dataset.filter));
+  $('#sort').onclick = () => { reversed = !reversed; renderList(); };
+  $('#folder-add').onclick = () => { $('#folder-name').value = ''; $('#folder-dialog').showModal(); $('#folder-name').focus(); };
+  $('#folder-close').onclick = () => $('#folder-dialog').close();
+  $('#folder-form').onsubmit = event => {
+    event.preventDefault(); const folder = $('#folder-name').value.trim();
+    if (!folder) return; if (['all', 'favorite', 'sticky'].includes(folder) || state.folders.includes(folder)) { toast('Escolha outro nome para este caderno.'); return; }
+    state.folders.push(folder); $('#folder-dialog').close(); changeFilter(folder); persist(); toast('Caderno criado! Adicione sua primeira página.');
+  };
+  for (const name of ['title', 'content', 'date', 'note-folder']) $('#' + name).addEventListener('input', saveNote);
+  $('#color').oninput = event => { if (current) { current.color = event.target.value; applyPaper(); persist(); } };
+  $('#paper-pattern').onchange = event => { state.settings.pattern = event.target.value; applySettings(); persist(); };
+  $('#favorite').onclick = () => { if (current) { current.favorite = !current.favorite; persist(); updateDocumentInfo(); renderList(); } };
+  $('#delete').onclick = () => {
+    if (!current || !confirm('Excluir esta página? Baixe um backup antes se quiser guardar uma cópia.')) return;
+    state.notes = state.notes.filter(note => note.id !== current.id); openNote(filteredNotes()[0]?.id || null); persist();
+  };
+  $('#toggle-focus').onclick = () => {
+    const focus = document.body.classList.toggle('focus-mode'); $('#toggle-focus').setAttribute('aria-pressed', String(focus));
+    $('#toggle-focus').title = focus ? 'Sair do modo foco' : 'Modo foco';
+  };
+  document.addEventListener('selectionchange', () => {
+    const selection = getSelection(); if (selection.rangeCount && $('#content').contains(selection.anchorNode) && $('#content').contains(selection.focusNode)) savedRange = selection.getRangeAt(0).cloneRange();
+  });
+  function restoreSelection() {
+    if (!current) { toast('Crie uma página para começar a escrever.'); return false; }
+    $('#content').focus(); const selection = getSelection();
+    if (savedRange && $('#content').contains(savedRange.commonAncestorContainer)) { selection.removeAllRanges(); selection.addRange(savedRange); }
+    else { const range = document.createRange(); range.selectNodeContents($('#content')); range.collapse(false); selection.removeAllRanges(); selection.addRange(range); }
+    return true;
+  }
+  function command(name, value) {
+    if (!restoreSelection()) return; document.execCommand(name, false, value); saveNote();
+  }
+  $$('[data-command]').forEach(button => { button.onmousedown = event => event.preventDefault(); button.onclick = () => command(button.dataset.command); });
+  $('#font').onchange = event => command('fontName', event.target.value);
+  $('#size').onchange = event => command('fontSize', event.target.value);
+  $('#text-color').oninput = event => command('foreColor', event.target.value);
+  $('#highlight').oninput = event => command('hiliteColor', event.target.value);
+  $$('[data-symbol]').forEach(button => { button.onmousedown = event => event.preventDefault(); button.onclick = () => command('insertText', button.dataset.symbol); });
+  $('#content').addEventListener('paste', event => { event.preventDefault(); command('insertText', event.clipboardData.getData('text/plain')); });
+  $('#content').addEventListener('change', event => {
+    if (event.target.matches('input[type="checkbox"]')) { event.target.toggleAttribute('checked', event.target.checked); saveNote(); }
+  });
+  $('#content').addEventListener('keydown', event => {
+    if (event.key === 'Tab' && getSelection().anchorNode?.parentElement?.closest('pre')) { event.preventDefault(); command('insertText', '  '); }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); saveNote(); toast('Página salva neste navegador ♡'); }
+  });
+  $('#insert-code').onclick = () => { if (!current) return toast('Crie uma página primeiro.'); $('#code-input').value = ''; $('#code-dialog').showModal(); $('#code-input').focus(); };
+  $('#code-close').onclick = () => $('#code-dialog').close();
+  $('#code-form').onsubmit = event => {
+    event.preventDefault(); const code = $('#code-input').value; if (!code.trim()) return;
+    $('#code-dialog').close(); command('insertHTML', `<pre data-language="${escapeHtml($('#code-language').value)}"><code>${escapeHtml(code)}</code></pre><p><br></p>`);
+  };
+  $('#insert-checklist').onclick = () => command('insertHTML', '<ul data-checklist><li><label><input type="checkbox"> O que quero aprender</label></li><li><label><input type="checkbox"> Praticar com um exercício</label></li><li><label><input type="checkbox"> Revisar minhas anotações</label></li></ul><p><br></p>');
+  $('#insert-date').onclick = () => command('insertText', new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(new Date()));
+  $('#insert-divider').onclick = () => command('insertHTML', '<hr><p><br></p>');
+  function zoom(delta) { state.settings.zoom = delta === 0 ? 100 : clamp(state.settings.zoom + delta, 70, 130, 100); applySettings(); persist(); }
+  $('#zoom-out').onclick = () => zoom(-10); $('#zoom-in').onclick = () => zoom(10); $('#zoom-reset').onclick = () => zoom(0);
+  $('#print').onclick = () => { if (current) window.print(); };
+  function download(name, content, type) {
+    const url = URL.createObjectURL(new Blob([content], { type })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  $('#export').onclick = () => { if (current) download((current.title || 'pagina').replace(/[^\p{L}\p{N} -]/gu, '').slice(0, 100) + '.txt', `${current.title}\n${current.date}\n\n${textOf(current.body)}`, 'text/plain;charset=utf-8'); };
+  $('#backup').onclick = () => download('meu-caderno-backup.json', JSON.stringify(state, null, 2), 'application/json');
+  $('#import').onchange = async event => {
+    try {
+      const file = event.target.files[0]; if (!file) return;
+      if (file.size > 5_000_000) throw Error('Arquivo muito grande'); const imported = normalize(JSON.parse(await file.text()));
+      if (!confirm('Substituir suas páginas e preferências pelo backup? Baixe um backup atual antes de continuar.')) return;
+      state = imported; filter = 'all'; $('#search').value = ''; applySettings(); openNote(state.activeId); persist(); toast('Caderno restaurado com suas personalizações ♡');
+    } catch { toast('Não foi possível importar. Escolha um backup válido de até 5 MB.'); }
+    finally { event.target.value = ''; }
+  };
+  let installPrompt;
+  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('#install').textContent = '↗ Instalar app'; });
+  $('#install').onclick = async () => {
+    if (installPrompt) { await installPrompt.prompt(); installPrompt = null; }
+    else alert('Para usar como aplicativo no computador, abra no Chrome ou Edge e procure “Instalar aplicativo” no menu do navegador. A opção depende do navegador e de HTTPS ou localhost. No Windows, você também pode usar o atalho do arquivo Abrir Meu Cantinho.bat.');
+  };
+  $('#help').onclick = () => alert('Seu caderno de programação ♡\n\n• Crie cadernos para organizar matérias e páginas para cada aula.\n• Selecione o texto e use a aba Escrever para formatar.\n• Na aba Inserir, adicione código, checklists e símbolos.\n• Em Personalizar, mude temas, cores, nomes, fontes e layout.\n• As notas ficam neste navegador, neste computador. Baixe backups regularmente para guardar uma cópia ou trocar de dispositivo.\n• Blocos de código servem para anotar; eles não executam programas.');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  applySettings(); openNote(state.activeId);
+  if (loadError) toast('Não foi possível ler os dados salvos. Importe um backup se tiver uma cópia.');
+})();

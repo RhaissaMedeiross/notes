@@ -7,8 +7,6 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-echo Abrindo Meu Cantinho...
-echo Mantenha a janela do servidor aberta enquanto estiver usando o app.
-start "Meu Cantinho - servidor" node server.js
-timeout /t 2 /nobreak >nul
-start "" "http://localhost:3000"
+echo Abrindo seu caderno de programacao...
+node desktop.cjs
+if errorlevel 1 pause

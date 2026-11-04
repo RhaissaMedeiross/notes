@@ -32,9 +32,30 @@ O salvamento é automático. **Salvar nota** e **Ctrl + S** também guardam a an
 
 As anotações antigas são convertidas para uma folha sem apagar seu texto. Backups antigos continuam aceitos; para abrir backups com múltiplas folhas, use a versão atual do app.
 
+## Post-its colados na folha
+
+Use **▧**, perto de **Salvar nota**, para colar um post-it sobre a folha atual; a seta **↗** cria um ao lado. As mesmas opções estão na aba **Inserir**. Nenhuma delas cria outra anotação ou troca de folha.
+
+- Clique no texto do post-it para escrever; o texto é salvo automaticamente.
+- Arraste pelo topo para organizar. Puxe o canto inferior direito para mudar o tamanho. As setas do teclado também funcionam quando o topo ou o canto está selecionado.
+- Use **↗ / ↙** no post-it para alternar entre a folha e o espaço ao lado.
+- O **alfinete** fixa a posição. Clique de novo para desafixar e mover ou redimensionar.
+- Use **− / +** para recolher ou abrir e **×** para excluir só o post-it (com confirmação).
+- Clique no texto da folha para continuar escrevendo, ou pressione **Esc** enquanto edita o post-it para voltar ao texto.
+
+Cada folha guarda seus post-its, posições, tamanhos, cores e estado fixado/recolhido. A área lateral aparece abaixo da folha em telas pequenas. O filtro **Post-its** encontra anotações com lembretes; busca e backups incluem seu texto. A exportação e a impressão incluem os lembretes ao final de cada folha para não ocultar o texto.
+
+Post-its criados como anotações nas versões antigas continuam disponíveis. Eles têm **Voltar ao texto** e **Colar uma cópia no texto**, preservando o original.
+
+## Marca-texto e código
+
+Para grifar, selecione um trecho na folha e clique em **Escrever → Marca-texto**. Escolha uma cor no controle ao lado; o ícone **Remover marca-texto** tira só a marcação. Negrito, itálico e sublinhado também estão nessa aba. Os post-its são lembretes de texto simples; use a folha para anotações com formatação.
+
+O **bloco de código** guarda exemplos de programação com linhas e espaços preservados. Ele não executa código. Use-o para copiar exemplos das aulas e revisar depois.
+
 ## O que tem no caderno
 
-- Anotações com múltiplas folhas, cadernos por matéria, busca, favoritos e post-its.
+- Anotações com múltiplas folhas, cadernos por matéria, busca, favoritos e post-its arrastáveis sobre a folha ou ao lado.
 - Fontes, tamanhos, negrito, itálico, sublinhado, tachado, cores, marca-texto, alinhamento e listas.
 - Blocos de código com linguagem, checklists, datas, divisores e símbolos. Código é material de anotação: não é executado.
 - Temas **Pink diary**, **Midnight (gótico)**, **Cyber angel (Y2K)** e **Rose milk**.

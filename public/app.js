@@ -17,7 +17,6 @@
       { id: 'first-code', title: 'Meu primeiro código ♡', folder: 'JavaScript', color: '', favorite: true, sticky: false, date: '', body: '<h2>Todo começo tem um hello world.</h2><p>Este é o meu espaço para aprender, errar, tentar de novo e guardar cada pequena descoberta. Sem pressa, um conceito de cada vez. ✧</p><h3>01 / O que é uma variável?</h3><p>Uma variável guarda uma informação que podemos usar depois. Em JavaScript, usamos <b>const</b> quando não vamos reatribuir o valor e <b>let</b> quando precisamos mudá-lo.</p><pre data-language="JavaScript"><code>// minha primeira anotação de código ♡\nconst nome = "Rhaíssa";\nlet aulasEstudadas = 1;\n\nconsole.log(`Olá, ${nome}!`);</code></pre><h3>02 / Para não esquecer</h3><ul><li>Strings são textos entre aspas.</li><li>Números podem ser usados em cálculos.</li><li><b>console.log()</b> mostra uma mensagem no console.</li></ul><p><i>♡ Aprender é construir uma versão nova de mim.</i></p>' },
       { id: 'html-css', title: 'HTML + CSS: meu mapa', folder: 'HTML & CSS', color: '', favorite: false, sticky: false, date: '', body: '<h2>A estrutura e o estilo ✿</h2><p><b>HTML</b> organiza o conteúdo. <b>CSS</b> define a aparência.</p><pre data-language="HTML"><code>&lt;h1&gt;Meu cantinho na internet&lt;/h1&gt;\n&lt;p&gt;Feito por mim, com carinho.&lt;/p&gt;</code></pre><h3>Meu próximo passo</h3><p>Criar uma página simples e experimentar cores, tamanhos e espaçamentos.</p>' },
       { id: 'logic', title: 'Pensar antes de programar', folder: 'Lógica de programação', color: '', favorite: false, sticky: false, date: '', body: '<h2>Dividir para entender ✧</h2><p>Um algoritmo é uma sequência de passos para resolver um problema.</p><ol><li>O que eu recebo de entrada?</li><li>O que eu preciso fazer com essa informação?</li><li>Qual resultado eu espero?</li></ol><h3>Exercício do dia</h3><p>Escrever, em palavras, os passos de um programa que diz se um número é par.</p>' },
-      { id: 'little-reminder', title: 'Lembrete de uma dev 🎀', folder: 'JavaScript', color: '#fbd9e7', favorite: false, sticky: true, date: '', body: '<h2>Você não precisa saber tudo.</h2><p>Pesquise. Faça perguntas. Teste de novo.</p><p>Cada erro é uma pista, não o fim do caminho. ♡</p>' }
     ], settings: { ...defaults }, activeId: 'first-code'
   };
   const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -67,6 +66,16 @@
     result.ribbonCollapsed = raw.ribbonCollapsed === true;
     return result;
   }
+  function normalizeStickies(raw) {
+    if (raw === undefined) return [];
+    if (!Array.isArray(raw) || !raw.every(item => item && typeof item.text === 'string')) throw Error('Post-its inválidos');
+    const ids = new Set();
+    return raw.map(item => {
+      const id = typeof item.id === 'string' && item.id && !ids.has(item.id) ? item.id : crypto.randomUUID();
+      ids.add(id);
+      return { id, text: item.text, color: isColor(item.color) ? item.color : '#fbd9e7', x: clamp(item.x ?? 100, 0, 794, 100), y: clamp(item.y ?? 220, 0, 100000, 220), width: clamp(item.width ?? 235, 120, 794, 235), height: clamp(item.height ?? 210, 100, 4000, 210), z: clamp(item.z ?? 1, 1, 100000, 1), area: item.area === 'desk' ? 'desk' : 'paper', pinned: item.pinned === true, collapsed: item.collapsed === true };
+    });
+  }
   function normalize(raw) {
     if (!raw || !Array.isArray(raw.notes) || !Array.isArray(raw.folders) || raw.notes.length > 10000 || !raw.folders.every(f => typeof f === 'string') || !raw.notes.every(n => n && typeof n.title === 'string' && typeof n.body === 'string')) throw Error('Backup inválido');
     const used = new Set();
@@ -78,16 +87,17 @@
       const pages = (n.pages?.length ? n.pages : [{ body: n.body }]).map(page => {
         const pageId = typeof page.id === 'string' && page.id && !pageIds.has(page.id) ? page.id : crypto.randomUUID();
         pageIds.add(pageId);
-        return { id: pageId, body: clean(page.body) };
+        return { id: pageId, body: clean(page.body), stickies: normalizeStickies(page.stickies) };
       });
       return { id, title: n.title, body: pages[0].body, pages, activePageId: pages.some(page => page.id === n.activePageId) ? n.activePageId : pages[0].id, folder: typeof n.folder === 'string' ? n.folder : '', color: isColor(n.color) ? n.color : '', date: /^\d{4}-\d{2}-\d{2}$/.test(n.date) ? n.date : '', favorite: !!n.favorite, sticky: !!n.sticky };
     });
-    return { version: 3, folders: [...new Set([...raw.folders, ...notes.map(n => n.folder).filter(Boolean)])], notes, settings: settingsFrom(raw.settings), activeId: notes.some(n => n.id === raw.activeId) ? raw.activeId : notes[0]?.id || null };
+    return { version: 4, lastTextNoteId: notes.some(n => n.id === raw.lastTextNoteId && !n.sticky) ? raw.lastTextNoteId : notes.find(n => n.id === raw.activeId && !n.sticky)?.id || notes.find(n => !n.sticky)?.id || null, folders: [...new Set([...raw.folders, ...notes.map(n => n.folder).filter(Boolean)])], notes, settings: settingsFrom(raw.settings), activeId: notes.some(n => n.id === raw.activeId) ? raw.activeId : notes[0]?.id || null };
   }
   let state, loadError = false;
   try { const raw = localStorage.getItem(STORAGE_KEY); state = normalize(raw ? JSON.parse(raw) : initial); }
   catch { state = normalize(initial); loadError = true; }
-  let current = null, filter = 'all', savedRange = null, reversed = false, toastTimer;
+  let current = null, filter = 'all', savedRange = null, reversed = false, toastTimer, editingSticky = false;
+  const stickyCanvases = { paper: StickyCanvas.create(), desk: StickyCanvas.create() };
   function toast(message) {
     $('#toast').textContent = message; $('#toast').classList.add('visible');
     clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 4000);
@@ -103,7 +113,39 @@
     return div.textContent.trim();
   }
   function activeSheet() { return current?.pages.find(page => page.id === current.activePageId) || current?.pages[0]; }
-  function noteText(note) { return note.pages.map(page => textOf(page.body)).join('\n\n'); }
+  function sheetText(page) { return [textOf(page.body), ...page.stickies.map(item => item.text)].filter(Boolean).join('\n\n'); }
+  function noteText(note) { return note.pages.map(sheetText).join('\n\n'); }
+  function hasStickies(note) { return note.sticky || note.pages.some(page => page.stickies.length); }
+  function renderStickies() {
+    if (!current) { stickyCanvases.paper.destroy(); stickyCanvases.desk.destroy(); $('#sticky-desk').hidden = true; $('.paper-and-desk').classList.remove('has-desk-stickies'); return; }
+    const page = activeSheet();
+    const beside = page.stickies.some(item => item.area === 'desk');
+    $('#sticky-desk').hidden = !beside;
+    $('.paper-and-desk').classList.toggle('has-desk-stickies', beside);
+    const onChange = change => {
+      if (change?.removed) {
+        page.stickies = page.stickies.filter(item => item.id !== change.id);
+        if (page === activeSheet()) renderStickies();
+      }
+      persist(); updateDocumentInfo(); renderList();
+    };
+    const onMove = (id, area) => {
+      const item = page.stickies.find(sticky => sticky.id === id); if (!item) return;
+      if (item.pinned) return toast('Desfixe o post-it pelo alfinete para mudar de lugar.');
+      Object.assign(item, area === 'desk' ? { area, x: 35, y: 150, width: 720, height: 540 } : { area, x: 430, y: 240, width: 235, height: 210 });
+      renderStickies(); persist(); stickyCanvases[area].focus(id);
+    };
+    stickyCanvases.paper.render({ layer: $('#sticky-layer'), paper: $('#paper'), stickies: page.stickies.filter(item => item.area === 'paper'), onChange, onMove });
+    stickyCanvases.desk.render({ layer: $('#desk-sticky-layer'), paper: $('#sticky-desk'), stickies: page.stickies.filter(item => item.area === 'desk'), onChange, onMove });
+  }
+  function addSticky(area = 'paper', text = '') {
+    if (!current) return toast('Abra uma anotação para colar um post-it.');
+    const page = activeSheet(); const offset = page.stickies.filter(item => item.area === area).length % 5;
+    const geometry = area === 'desk' ? { x: 35, y: 150 + offset * 100, width: 720, height: 540 } : { x: 420 - offset * 25, y: 240 + offset * 30, width: 235, height: 210 };
+    const item = { id: crypto.randomUUID(), text, color: '#fbd9e7', ...geometry, z: Math.min(100000, Math.max(0, ...page.stickies.map(sticky => sticky.z)) + 1), area, pinned: false, collapsed: false };
+    page.stickies.push(item); renderStickies(); persist(); renderList(); updateDocumentInfo(); stickyCanvases[area].focus(item.id);
+    toast('Arraste pelo topo e ajuste o tamanho pelo canto. Use o alfinete para fixar ♡');
+  }
   function renderSheets() {
     const pages = current?.pages || [];
     const index = pages.findIndex(page => page.id === current.activePageId);
@@ -121,13 +163,13 @@
     if (!current || !current.pages.some(page => page.id === id)) return;
     current.activePageId = id; savedRange = null;
     $('#content').innerHTML = clean(activeSheet().body);
-    renderSheets(); updateDocumentInfo();
+    renderStickies(); renderSheets(); updateDocumentInfo();
     $('.paper-stage').scrollTop = 0;
   }
   function addSheet() {
     if (!current) return;
     saveNote();
-    const page = { id: crypto.randomUUID(), body: '' };
+    const page = { id: crypto.randomUUID(), body: '', stickies: [] };
     const index = current.pages.findIndex(item => item.id === current.activePageId);
     current.pages.splice(index + 1, 0, page);
     showSheet(page.id); persist(); renderList(); $('#content').focus();
@@ -135,7 +177,7 @@
   }
   function filteredNotes() {
     const query = $('#search').value.toLocaleLowerCase('pt-BR');
-    const notes = state.notes.filter(n => (filter === 'all' || filter === 'favorite' && n.favorite || filter === 'sticky' && n.sticky || n.folder === filter) && `${n.title} ${noteText(n)}`.toLocaleLowerCase('pt-BR').includes(query));
+    const notes = state.notes.filter(n => (filter === 'all' || filter === 'favorite' && n.favorite || filter === 'sticky' && hasStickies(n) || n.folder === filter) && `${n.title} ${noteText(n)}`.toLocaleLowerCase('pt-BR').includes(query));
     return reversed ? notes.toReversed() : notes;
   }
   function renderList() {
@@ -145,8 +187,12 @@
     $$('[data-filter]').forEach(button => button.classList.toggle('active', button.dataset.filter === filter));
     $('#collection-title').textContent = filter === 'all' ? 'Todas as anotações' : filter === 'favorite' ? 'Favoritas' : filter === 'sticky' ? 'Meus post-its' : filter;
     const notes = filteredNotes(); $('#subtitle').textContent = `${notes.length} ${notes.length === 1 ? 'anotação' : 'anotações'} · suas pequenas descobertas`;
-    $('#notes').innerHTML = notes.map(n => `<button class="page-card ${n.id === current?.id ? 'active' : ''} ${n.sticky ? 'sticky' : ''}" data-id="${escapeHtml(n.id)}" aria-pressed="${n.id === current?.id}"><span class="page-card-row"><span class="page-card-icon">${n.sticky ? '▧ POST-IT' : '▤ ANOTAÇÃO'}</span><span class="page-card-favorite">${n.favorite ? '♥' : '· · ·'}</span></span><strong class="page-card-title">${escapeHtml(n.title || 'Anotação sem título')}</strong><span class="page-card-preview">${escapeHtml(noteText(n).slice(0, 100) || 'Uma ideia esperando para acontecer…')}</span><span class="page-card-meta">${escapeHtml(n.folder || 'Sem caderno')}<span>${n.pages.length} ${n.pages.length === 1 ? 'folha' : 'folhas'}</span></span></button>`).join('') || '<div class="empty-list"><span>♡</span><p>Nenhuma anotação por aqui.</p><small>Crie uma anotação ou tente outra busca.</small></div>';
-    $$('[data-id]').forEach(button => button.onclick = () => { openNote(button.dataset.id); persist(); });
+    $('#notes').innerHTML = notes.map(n => `<button class="page-card ${n.id === current?.id ? 'active' : ''} ${n.sticky ? 'sticky' : ''}" data-id="${escapeHtml(n.id)}" aria-pressed="${n.id === current?.id}"><span class="page-card-row"><span class="page-card-icon">${n.sticky ? '▧ POST-IT ANTIGO' : hasStickies(n) ? '▧ COM POST-ITS' : '▤ ANOTAÇÃO'}</span><span class="page-card-favorite">${n.favorite ? '♥' : '· · ·'}</span></span><strong class="page-card-title">${escapeHtml(n.title || 'Anotação sem título')}</strong><span class="page-card-preview">${escapeHtml(noteText(n).slice(0, 100) || 'Uma ideia esperando para acontecer…')}</span><span class="page-card-meta">${escapeHtml(n.folder || 'Sem caderno')}<span>${n.pages.length} ${n.pages.length === 1 ? 'folha' : 'folhas'}</span></span></button>`).join('') || '<div class="empty-list"><span>♡</span><p>Nenhuma anotação por aqui.</p><small>Crie uma anotação ou tente outra busca.</small></div>';
+    $$('[data-id]').forEach(button => button.onclick = () => {
+      const note = state.notes.find(item => item.id === button.dataset.id);
+      if (filter === 'sticky' && !note.sticky && !note.pages.find(page => page.id === note.activePageId)?.stickies.length) note.activePageId = note.pages.find(page => page.stickies.length)?.id || note.activePageId;
+      openNote(button.dataset.id); persist();
+    });
   }
   function changeFilter(next) {
     filter = next; const visible = filteredNotes();
@@ -173,11 +219,13 @@
     const text = current ? noteText(current) : '';
     const words = text.match(/\S+/g)?.length || 0;
     $('#word-count').textContent = `${words} ${words === 1 ? 'palavra' : 'palavras'}`;
-    const sheetWords = current ? textOf(activeSheet().body).match(/\S+/g)?.length || 0 : 0;
+    const sheetWords = current ? sheetText(activeSheet()).match(/\S+/g)?.length || 0 : 0;
     $('#word-count-top').textContent = `${sheetWords} ${sheetWords === 1 ? 'palavra nesta folha' : 'palavras nesta folha'}`;
   }
   function openNote(id) {
-    current = state.notes.find(n => n.id === id) || null; savedRange = null; state.activeId = current?.id || null;
+    current = state.notes.find(n => n.id === id) || null; savedRange = null; editingSticky = false; state.activeId = current?.id || null;
+    if (current && !current.sticky) state.lastTextNoteId = current.id;
+    $('#legacy-sticky-info').hidden = !current?.sticky;
     $('#paper').hidden = !current; $('.desk-caption').hidden = !current; $('.desk-footer').hidden = !current;
     $('#empty-editor').hidden = !!current;
     $$('.document-actions button').forEach(button => button.disabled = !current);
@@ -186,7 +234,7 @@
       $('#note-folder').innerHTML = '<option value="">Sem caderno</option>' + state.folders.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
       $('#note-folder').value = current.folder; applyPaper();
     }
-    renderSheets(); updateDocumentInfo(); renderList();
+    renderStickies(); renderSheets(); updateDocumentInfo(); renderList();
   }
   function saveNote() {
     if (!current) return;
@@ -194,12 +242,12 @@
     Object.assign(current, { title: $('#title').value, body: current.pages[0].body, folder: $('#note-folder').value, date: $('#date').value });
     const saved = persist(); updateDocumentInfo(); renderList(); return saved;
   }
-  function newNote(sticky = false) {
-    const note = { id: crypto.randomUUID(), title: '', body: '', folder: state.folders.includes(filter) ? filter : '', date: '', color: sticky ? '#fbd9e7' : '', sticky, favorite: false };
-    const page = { id: crypto.randomUUID(), body: '' };
+  function newNote() {
+    const note = { id: crypto.randomUUID(), title: '', body: '', folder: state.folders.includes(filter) ? filter : '', date: '', color: '', sticky: false, favorite: false };
+    const page = { id: crypto.randomUUID(), body: '', stickies: [] };
     note.pages = [page]; note.activePageId = page.id;
     state.notes.unshift(note); $('#search').value = '';
-    if (filter === 'favorite' || filter === 'sticky' && !sticky) filter = 'all';
+    if (filter === 'favorite' || filter === 'sticky') filter = 'all';
     openNote(note.id); persist(); $('#title').focus();
   }
   function syncRibbon() {
@@ -267,7 +315,19 @@
     if (state.settings.ribbonCollapsed) { state.settings.ribbonCollapsed = false; syncRibbon(); persist(); }
   });
   $('#new').onclick = $('#new-list').onclick = $('#new-empty').onclick = () => newNote();
-  $('#sticky-new').onclick = () => newNote(true);
+  $('#sticky-new').onclick = $('#sticky-add-sheet').onclick = () => addSticky('paper');
+  $('#sticky-beside-new').onclick = $('#sticky-add-beside').onclick = () => addSticky('desk');
+  function returnToText() {
+    const target = state.notes.find(note => note.id === state.lastTextNoteId && !note.sticky) || state.notes.find(note => !note.sticky);
+    filter = 'all'; $('#search').value = '';
+    if (target) { openNote(target.id); persist(); } else newNote();
+  }
+  $('#return-to-note').onclick = returnToText;
+  $('#legacy-attach').onclick = () => {
+    if (!current?.sticky) return;
+    const text = [current.title, noteText(current)].filter(Boolean).join('\n\n');
+    returnToText(); addSticky('paper', text);
+  };
   $('#sheet-add').onclick = $('#sheet-add-bottom').onclick = addSheet;
   $('#sheet-select').onchange = event => { saveNote(); showSheet(event.target.value); persist(); };
   $('#sheet-prev').onclick = () => {
@@ -320,7 +380,17 @@
   document.addEventListener('selectionchange', () => {
     const selection = getSelection(); if (selection.rangeCount && $('#content').contains(selection.anchorNode) && $('#content').contains(selection.focusNode)) savedRange = selection.getRangeAt(0).cloneRange();
   });
+  document.addEventListener('focusin', event => {
+    if (event.target.matches('.sticky-text')) editingSticky = true;
+    else if (event.target === $('#content') || event.target === $('#title')) editingSticky = false;
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && event.target.matches('.sticky-text')) {
+      event.preventDefault(); editingSticky = false; restoreSelection();
+    }
+  });
   function restoreSelection() {
+    if (editingSticky) { toast('Use a barra de formatação no texto da folha. Clique na folha para continuar.'); return false; }
     if (!current) { toast('Crie uma página para começar a escrever.'); return false; }
     $('#content').focus(); const selection = getSelection();
     if (savedRange && $('#content').contains(savedRange.commonAncestorContainer)) { selection.removeAllRanges(); selection.addRange(savedRange); }
@@ -334,7 +404,10 @@
   $('#font').onchange = event => command('fontName', event.target.value);
   $('#size').onchange = event => command('fontSize', event.target.value);
   $('#text-color').oninput = event => command('foreColor', event.target.value);
-  $('#highlight').oninput = event => command('hiliteColor', event.target.value);
+  $('#highlight').oninput = event => { event.target.closest('label').style.borderBottomColor = event.target.value; command('hiliteColor', event.target.value); };
+  $('#apply-highlight').onmousedown = $('#clear-highlight').onmousedown = event => event.preventDefault();
+  $('#apply-highlight').onclick = () => command('hiliteColor', $('#highlight').value);
+  $('#clear-highlight').onclick = () => command('hiliteColor', 'transparent');
   $$('[data-symbol]').forEach(button => { button.onmousedown = event => event.preventDefault(); button.onclick = () => command('insertText', button.dataset.symbol); });
   $('#content').addEventListener('paste', event => { event.preventDefault(); command('insertText', event.clipboardData.getData('text/plain')); });
   $('#content').addEventListener('change', event => {
@@ -355,7 +428,7 @@
   function zoom(delta) { state.settings.zoom = delta === 0 ? 100 : clamp(state.settings.zoom + delta, 70, 130, 100); applySettings(); persist(); }
   $('#zoom-out').onclick = () => zoom(-10); $('#zoom-in').onclick = () => zoom(10); $('#zoom-reset').onclick = () => zoom(0);
   function preparePrint() {
-    $('#print-document').innerHTML = current ? current.pages.map((page, index) => `<article class="print-sheet"><h1>${escapeHtml(current.title || 'Anotação sem título')}</h1><div class="print-meta">${escapeHtml(current.folder)}${current.date ? ' · ' + escapeHtml(current.date.split('-').reverse().join('/')) : ''} · Folha ${index + 1} de ${current.pages.length}</div><div class="print-body">${clean(page.body)}</div></article>`).join('') : '';
+    $('#print-document').innerHTML = current ? current.pages.map((page, index) => `<article class="print-sheet"><h1>${escapeHtml(current.title || 'Anotação sem título')}</h1><div class="print-meta">${escapeHtml(current.folder)}${current.date ? ' · ' + escapeHtml(current.date.split('-').reverse().join('/')) : ''} · Folha ${index + 1} de ${current.pages.length}</div><div class="print-body">${clean(page.body)}</div>${page.stickies.length ? `<section class="print-stickies"><h2>Post-its desta folha</h2>${page.stickies.map(item => `<div class="printed-sticky"><small>${item.area === 'desk' ? 'Ao lado da folha' : 'Sobre a folha'}</small><p>${escapeHtml(item.text)}</p></div>`).join('')}</section>` : ''}</article>`).join('') : '';
   }
   window.addEventListener('beforeprint', preparePrint);
   window.addEventListener('afterprint', () => { $('#print-document').replaceChildren(); });
@@ -363,7 +436,7 @@
   function download(name, content, type) {
     const url = URL.createObjectURL(new Blob([content], { type })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  $('#export').onclick = () => { if (current) download((current.title || 'pagina').replace(/[^\p{L}\p{N} -]/gu, '').slice(0, 100) + '.txt', `${current.title}\n${current.date}\n\n${current.pages.map((page, index) => `--- Folha ${index + 1} de ${current.pages.length} ---\n${textOf(page.body)}`).join('\n\n')}`, 'text/plain;charset=utf-8'); };
+  $('#export').onclick = () => { if (current) download((current.title || 'pagina').replace(/[^\p{L}\p{N} -]/gu, '').slice(0, 100) + '.txt', `${current.title}\n${current.date}\n\n${current.pages.map((page, index) => `--- Folha ${index + 1} de ${current.pages.length} ---\n${textOf(page.body)}${page.stickies.length ? '\n\nPOST-ITS\n' + page.stickies.map((item, i) => `[${i + 1}] ${item.text}`).join('\n\n') : ''}`).join('\n\n')}`, 'text/plain;charset=utf-8'); };
   $('#backup').onclick = () => download('meu-caderno-backup.json', JSON.stringify(state, null, 2), 'application/json');
   $('#import').onchange = async event => {
     try {
@@ -380,7 +453,7 @@
     if (installPrompt) { await installPrompt.prompt(); installPrompt = null; }
     else alert('Para usar como aplicativo no computador, abra no Chrome ou Edge e procure “Instalar aplicativo” no menu do navegador. A opção depende do navegador e de HTTPS ou localhost. No Windows, você também pode usar o atalho do arquivo Abrir Meu Cantinho.bat.');
   };
-  $('#help').onclick = () => alert('Seu caderno de programação ♡\n\n• Crie cadernos para matérias e anotações para cada aula. Use Nova folha para continuar o mesmo conteúdo. Troque de folha pelas setas ou pelo seletor.\n• O salvamento é automático. Você também pode usar Salvar nota ou Ctrl + S para guardar todas as folhas neste navegador.\n• Use a setinha ao lado das abas ou Ctrl + F1 para recolher a barra de ferramentas e ter mais espaço. Clique em uma aba para reabrir.\n• Selecione o texto e use a aba Escrever para formatar.\n• Na aba Inserir, adicione código, checklists e símbolos.\n• Na aba Página, escolha Folha A4 ou caderno e ative ou desative os furinhos.\n• Em Personalizar, mude temas, cores, nomes, fontes e layout.\n• As notas ficam neste navegador, neste computador. Baixe backups regularmente para guardar uma cópia ou trocar de dispositivo.\n• Blocos de código servem para anotar; eles não executam programas.');
+  $('#help').onclick = () => alert('Seu caderno de programação ♡\n\n• Crie cadernos para matérias e anotações para cada aula. Use Nova folha para continuar o mesmo conteúdo. Troque de folha pelas setas ou pelo seletor.\n• O salvamento é automático. Você também pode usar Salvar nota ou Ctrl + S para guardar todas as folhas neste navegador.\n• Use a setinha ao lado das abas ou Ctrl + F1 para recolher a barra de ferramentas e ter mais espaço. Clique em uma aba para reabrir.\n• Selecione o texto e use a aba Escrever para formatar.\n• Cole post-its na folha ou ao lado, arraste pelo topo e redimensione pelo canto. O alfinete fixa a posição. Clique na folha para voltar a escrever.\n• Na aba Escrever, selecione um texto e clique Marca-texto para grifar.\n• Na aba Inserir, adicione código, checklists e símbolos.\n• Na aba Página, escolha Folha A4 ou caderno e ative ou desative os furinhos.\n• Em Personalizar, mude temas, cores, nomes, fontes e layout.\n• As notas ficam neste navegador, neste computador. Baixe backups regularmente para guardar uma cópia ou trocar de dispositivo.\n• Blocos de código servem para anotar; eles não executam programas.');
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   applySettings(); openNote(state.activeId);
   if (loadError) toast('Não foi possível ler os dados salvos. Importe um backup se tiver uma cópia.');

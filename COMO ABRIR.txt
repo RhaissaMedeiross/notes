@@ -9,12 +9,17 @@ MEU CADERNO - STUDY STUDIO (WINDOWS)
 6. Para criar um atalho: botao direito no arquivo .bat > Mostrar mais opcoes >
    Enviar para > Area de trabalho (criar atalho).
 
-PARA ATUALIZAR: baixe um Backup no app antigo, feche a janela do servidor
-antigo e depois abra a nova versao. Use o mesmo navegador e perfil.
+PARA ATUALIZAR: nao precisa reinstalar o Node.js. Baixe um Backup no app
+antigo, feche o app e o servidor antigo, baixe o ZIP novo e substitua
+os arquivos na mesma pasta do aplicativo. Depois abra o .bat novamente.
+Use o mesmo navegador e perfil. Ainda nao ha atualizacao automatica.
 As notas ficam neste navegador; baixe backups regularmente.
 
 Use Personalizar para escolher temas rosa, gotico e Y2K, mudar cores,
 fontes, nome, frases e layout. Use a aba Inserir para codigo e checklists.
+Use Nova folha para continuar na mesma anotacao. Troque pelas setas ou
+pelo seletor de folhas. Salvar nota e Ctrl + S salvam todas as folhas,
+alem do salvamento automatico. Backup guarda uma copia fora do app.
 Os blocos de codigo sao anotacoes: nao executam programas.
 Nao e necessario npm install. Para outros sistemas, use npm start na pasta.
 O lancador Windows ainda precisa ser verificado no seu computador.

@@ -14,16 +14,27 @@ O lançador do Windows foi preparado, mas precisa de validação no seu computad
 
 ### Atualizar uma versão anterior
 
-Antes de atualizar, clique em **Backup** no app para guardar uma cópia de suas páginas. Feche a janela antiga do servidor, extraia a nova versão e abra seu `.bat`. Use o mesmo navegador e perfil e mantenha a porta 3000 para reencontrar suas notas. O formato antigo de backup também é aceito. Não substitua dados do navegador nem use um perfil temporário para atualizar.
+Não é necessário reinstalar o Node.js nem instalar novamente o atalho. O aplicativo local ainda não faz atualizações automáticas: é preciso baixar a versão nova. Antes de atualizar, clique em **Backup** no app para guardar uma cópia de suas anotações. Feche o app e a janela antiga do servidor, extraia a nova versão e copie os arquivos para a mesma pasta do app, substituindo os anteriores; depois abra seu `.bat`. Manter a mesma pasta preserva o caminho do atalho. Use o mesmo navegador e perfil e mantenha a porta 3000 para reencontrar suas notas. O formato antigo de backup também é aceito. Não substitua dados do navegador nem use um perfil temporário para atualizar.
+
+## Folhas dentro da mesma anotação
+
+**Nova anotação**, na lateral, cria um conteúdo independente. Para continuar o mesmo assunto em outra folha, use **＋ Nova folha**, acima do editor, ou **＋ Adicionar folha neste conteúdo**, no final da folha.
+
+Use as setas e o seletor **Folha 1 de 3** para navegar. Cada folha tem seu texto e formatação; título, caderno, cor e data são da anotação inteira. O app lembra a folha aberta. **Excluir folha** remove só a folha atual, com confirmação, e mantém pelo menos uma folha; excluir a anotação remove todas as suas folhas.
+
+O salvamento é automático. **Salvar nota** e **Ctrl + S** também guardam a anotação com todas as folhas no navegador. Para uma cópia fora do app, use **Backup** (todas as anotações e personalizações), **Página → Exportar texto** (todas as folhas da anotação) ou **Imprimir / PDF** (todas as folhas). A busca também pesquisa nas folhas adicionais.
+
+As anotações antigas são convertidas para uma folha sem apagar seu texto. Backups antigos continuam aceitos; para abrir backups com múltiplas folhas, use a versão atual do app.
 
 ## O que tem no caderno
 
-- Páginas, cadernos por matéria, busca, favoritos e post-its.
+- Anotações com múltiplas folhas, cadernos por matéria, busca, favoritos e post-its.
 - Fontes, tamanhos, negrito, itálico, sublinhado, tachado, cores, marca-texto, alinhamento e listas.
 - Blocos de código com linguagem, checklists, datas, divisores e símbolos. Código é material de anotação: não é executado.
 - Temas **Pink diary**, **Midnight (gótico)**, **Cyber angel (Y2K)** e **Rose milk**.
 - Personalização de nome, símbolo, frases, cores do site, fonte da interface e títulos, tipo de papel, tamanho da interface, cantos e layout.
 - Papel pautado, quadriculado, pontilhado ou liso, zoom e modo foco.
+- Formato **Caderno** ou **Folha A4** na aba Página e em Personalizar; opção independente de mostrar ou esconder os furinhos e a margem. A4 começa sem furos e sem linhas; você pode personalizar depois. A folha cresce para acomodar conteúdo longo, sem ocultar texto.
 - Exportação de texto, impressão/PDF e backup/restauração com as personalizações.
 
 As páginas e preferências são salvas no `localStorage` do navegador, sem conta ou sincronização entre dispositivos. Limpar dados do navegador remove as notas. Baixe backups regularmente. Atualizar o tema não exclui suas páginas. Notas da primeira versão são lidas pela mesma chave `cantinho-v1`.
@@ -47,4 +58,4 @@ node --check public/app.js
 node --check public/sw.js
 ```
 
-Validação realizada em Chromium: criação/edição de páginas e cadernos, persistência após recarregar, código seguro, negrito, marca-texto, checklists, favoritos, busca, quatro temas, personalização, backup/restauração, migração de notas antigas e layout desktop/mobile. O lançador específico do Windows e a instalação no PC exigem validação no sistema de destino.
+Validação de múltiplas folhas em Chromium: conteúdo independente em três folhas, navegação, folha ativa após recarregar, salvamento explícito e Ctrl + S, busca em todas as folhas, exportação, backup/importação, impressão de todas as folhas, exclusão com proteção da última folha, migração dos formatos antigos e layout mobile. Também foi validado anteriormente: criação/edição de páginas e cadernos, persistência após recarregar, código seguro, negrito, marca-texto, checklists, favoritos, busca, quatro temas, personalização, backup/restauração, migração de notas antigas e layout desktop/mobile. O lançador específico do Windows e a instalação no PC exigem validação no sistema de destino.

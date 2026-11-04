@@ -1,4 +1,4 @@
-const CACHE = 'study-studio-v2';
+const CACHE = 'study-studio-v3';
 const ASSETS = ['/', '/style.css', '/app.js', '/icon.svg', '/icon-192.png', '/icon-512.png', '/manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));

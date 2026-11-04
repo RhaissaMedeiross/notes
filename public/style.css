@@ -45,3 +45,8 @@ body.no-punches .paper{padding-left:44px;padding-right:44px}
 @media(max-width:1150px){body.no-punches .paper{padding-left:28px;padding-right:28px}}
 @media(max-width:760px){body.no-punches .paper{padding-left:25px;padding-right:25px}}
 @media(max-width:380px){body.no-punches .paper{padding-left:20px;padding-right:20px}}
+
+/* Keep the tab strip available when the formatting ribbon is tucked away. */
+.ribbon-heading{display:flex;align-items:center;gap:8px;min-width:0;height:100%;flex-shrink:0}.ribbon-toggle{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:30px;min-height:30px;padding:5px 8px;border:1px solid var(--line);color:var(--accent-deep);font-size:10px;flex-shrink:0}.ribbon-chevron{display:block;transition:transform .15s}.ribbon-collapsed .ribbon-chevron{transform:rotate(180deg)}.ribbon{flex-shrink:0}.ribbon-toggle:hover{background:var(--soft)}
+@media(max-width:760px){.ribbon-heading{gap:3px}.ribbon-toggle{padding:4px;min-width:28px}#ribbon-toggle-label{display:none}}
+@media(prefers-reduced-motion:reduce){.ribbon-chevron{transition:none}}

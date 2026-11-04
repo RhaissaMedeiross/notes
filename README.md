@@ -16,6 +16,12 @@ O lançador do Windows foi preparado, mas precisa de validação no seu computad
 
 Não é necessário reinstalar o Node.js nem instalar novamente o atalho. O aplicativo local ainda não faz atualizações automáticas: é preciso baixar a versão nova. Antes de atualizar, clique em **Backup** no app para guardar uma cópia de suas anotações. Feche o app e a janela antiga do servidor, extraia a nova versão e copie os arquivos para a mesma pasta do app, substituindo os anteriores; depois abra seu `.bat`. Manter a mesma pasta preserva o caminho do atalho. Use o mesmo navegador e perfil e mantenha a porta 3000 para reencontrar suas notas. O formato antigo de backup também é aceito. Não substitua dados do navegador nem use um perfil temporário para atualizar.
 
+## Mais espaço para escrever
+
+Clique na **setinha ao lado das abas Escrever / Inserir / Página** para recolher a barra de fontes e formatação. A folha sobe e ganha o espaço da barra. Use a mesma setinha para mostrar as ferramentas novamente; clicar em uma aba também reabre a barra. O atalho **Ctrl + F1** alterna entre os dois modos.
+
+A preferência é lembrada ao reabrir o app e incluída no backup, sem alterar suas anotações.
+
 ## Folhas dentro da mesma anotação
 
 **Nova anotação**, na lateral, cria um conteúdo independente. Para continuar o mesmo assunto em outra folha, use **＋ Nova folha**, acima do editor, ou **＋ Adicionar folha neste conteúdo**, no final da folha.

@@ -10,7 +10,7 @@
     y2k: { accent: '#a13be0', bg: '#e7ddfa', panel: '#f5f0ff', paper: '#fffaff', ink: '#49335f', font: 'mono', heading: 'sans', pattern: 'grid', radius: 16 },
     rose: { accent: '#b86782', bg: '#f4e7eb', panel: '#fbf5f7', paper: '#fffafb', ink: '#684652', font: 'sans', heading: 'sans', pattern: 'dots', radius: 8 }
   };
-  const defaults = { ...presets.girly, theme: 'girly', name: 'meu caderno', icon: '୨୧', motto: 'aprendendo no meu ritmo.', desk: 'MY LITTLE CODING WORLD', footer: 'feito de café, código & sonhos', layout: 'comfortable', scale: 100, decorations: true, punches: true, pageFormat: 'notebook', zoom: 100 };
+  const defaults = { ...presets.girly, theme: 'girly', name: 'meu caderno', icon: '୨୧', motto: 'aprendendo no meu ritmo.', desk: 'MY LITTLE CODING WORLD', footer: 'feito de café, código & sonhos', layout: 'comfortable', scale: 100, decorations: true, punches: true, pageFormat: 'notebook', ribbonCollapsed: false, zoom: 100 };
   const initial = {
     folders: ['JavaScript', 'HTML & CSS', 'Lógica de programação'],
     notes: [
@@ -64,6 +64,7 @@
     result.decorations = raw.decorations !== false;
     result.punches = raw.punches !== false;
     result.pageFormat = raw.pageFormat === 'a4' ? 'a4' : 'notebook';
+    result.ribbonCollapsed = raw.ribbonCollapsed === true;
     return result;
   }
   function normalize(raw) {
@@ -201,6 +202,24 @@
     if (filter === 'favorite' || filter === 'sticky' && !sticky) filter = 'all';
     openNote(note.id); persist(); $('#title').focus();
   }
+  function syncRibbon() {
+    const collapsed = state.settings.ribbonCollapsed;
+    $('#ribbon-tools').hidden = collapsed;
+    document.body.classList.toggle('ribbon-collapsed', collapsed);
+    $('#toggle-ribbon').setAttribute('aria-expanded', String(!collapsed));
+    const action = collapsed ? 'Mostrar ferramentas' : 'Recolher ferramentas';
+    $('#toggle-ribbon').setAttribute('aria-label', action);
+    $('#toggle-ribbon').title = `${action} (Ctrl + F1)`;
+    $('#ribbon-toggle-label').textContent = collapsed ? 'Mostrar' : 'Recolher';
+  }
+  function toggleRibbon() {
+    state.settings.ribbonCollapsed = !state.settings.ribbonCollapsed;
+    syncRibbon(); persist();
+  }
+  $('#toggle-ribbon').onclick = toggleRibbon;
+  document.addEventListener('keydown', event => {
+    if (event.ctrlKey && event.key === 'F1') { event.preventDefault(); toggleRibbon(); }
+  });
   function applySettings(syncControls = true) {
     const settings = state.settings;
     document.body.dataset.theme = settings.theme; document.body.dataset.pattern = settings.pattern; document.body.dataset.layout = settings.layout;
@@ -224,7 +243,7 @@
       for (const name of ['name', 'icon', 'motto', 'desk', 'footer', 'accent', 'bg', 'panel', 'paper', 'ink', 'font', 'heading', 'pattern', 'layout', 'scale', 'radius']) $('#setting-' + name).value = settings[name];
       $('#setting-decorations').checked = settings.decorations;
     }
-    applyPaper(); updateDocumentInfo();
+    syncRibbon(); applyPaper(); updateDocumentInfo();
   }
   for (const name of ['name', 'icon', 'motto', 'desk', 'footer', 'accent', 'bg', 'panel', 'paper', 'ink', 'font', 'heading', 'pattern', 'layout', 'scale', 'radius']) {
     $('#setting-' + name).addEventListener('input', event => {
@@ -245,6 +264,7 @@
   $$('[data-tab]').forEach(button => button.onclick = () => {
     $$('[data-tab]').forEach(tab => { tab.classList.toggle('active', tab === button); tab.setAttribute('aria-selected', String(tab === button)); });
     $$('.ribbon-panel').forEach(panel => panel.hidden = panel.id !== 'panel-' + button.dataset.tab);
+    if (state.settings.ribbonCollapsed) { state.settings.ribbonCollapsed = false; syncRibbon(); persist(); }
   });
   $('#new').onclick = $('#new-list').onclick = $('#new-empty').onclick = () => newNote();
   $('#sticky-new').onclick = () => newNote(true);
@@ -360,7 +380,7 @@
     if (installPrompt) { await installPrompt.prompt(); installPrompt = null; }
     else alert('Para usar como aplicativo no computador, abra no Chrome ou Edge e procure “Instalar aplicativo” no menu do navegador. A opção depende do navegador e de HTTPS ou localhost. No Windows, você também pode usar o atalho do arquivo Abrir Meu Cantinho.bat.');
   };
-  $('#help').onclick = () => alert('Seu caderno de programação ♡\n\n• Crie cadernos para matérias e anotações para cada aula. Use Nova folha para continuar o mesmo conteúdo. Troque de folha pelas setas ou pelo seletor.\n• O salvamento é automático. Você também pode usar Salvar nota ou Ctrl + S para guardar todas as folhas neste navegador.\n• Selecione o texto e use a aba Escrever para formatar.\n• Na aba Inserir, adicione código, checklists e símbolos.\n• Na aba Página, escolha Folha A4 ou caderno e ative ou desative os furinhos.\n• Em Personalizar, mude temas, cores, nomes, fontes e layout.\n• As notas ficam neste navegador, neste computador. Baixe backups regularmente para guardar uma cópia ou trocar de dispositivo.\n• Blocos de código servem para anotar; eles não executam programas.');
+  $('#help').onclick = () => alert('Seu caderno de programação ♡\n\n• Crie cadernos para matérias e anotações para cada aula. Use Nova folha para continuar o mesmo conteúdo. Troque de folha pelas setas ou pelo seletor.\n• O salvamento é automático. Você também pode usar Salvar nota ou Ctrl + S para guardar todas as folhas neste navegador.\n• Use a setinha ao lado das abas ou Ctrl + F1 para recolher a barra de ferramentas e ter mais espaço. Clique em uma aba para reabrir.\n• Selecione o texto e use a aba Escrever para formatar.\n• Na aba Inserir, adicione código, checklists e símbolos.\n• Na aba Página, escolha Folha A4 ou caderno e ative ou desative os furinhos.\n• Em Personalizar, mude temas, cores, nomes, fontes e layout.\n• As notas ficam neste navegador, neste computador. Baixe backups regularmente para guardar uma cópia ou trocar de dispositivo.\n• Blocos de código servem para anotar; eles não executam programas.');
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   applySettings(); openNote(state.activeId);
   if (loadError) toast('Não foi possível ler os dados salvos. Importe um backup se tiver uma cópia.');
